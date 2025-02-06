@@ -33,7 +33,17 @@ const getToken = async () => {
 // isLVRpack: true, //papildrisku paka, nav obligāti jāiekļauj
 // vehicle: jālieto vai nu mašīnas reģistrācijas apliecības numurs vai personas kods
 
-const auto = async (vehicleRegistrationNumber, regCertNr) => {
+// need to make a decision about how to format the response
+const formatResponse = (data) => {
+  const prices = data.premiumDataList.reduce((acc, price) => {
+    acc[parseInt(price.periodDuration)] = parseFloat(price.premiumCalculated);
+    return acc;
+  }, {});
+
+  return { id: 'balcia', logo: '/balcia.png', prices };
+};
+
+const auto = async (reg, vin) => {
   const token = await getToken();
   console.log('token aquired');
   if (!token) {
@@ -59,8 +69,8 @@ const auto = async (vehicleRegistrationNumber, regCertNr) => {
         policyType: 'DEFAULT',
       },
       vehicle: {
-        vehicleRegistrationNumber,
-        regCertNr,
+        vehicleRegistrationNumber: reg,
+        regCertNr: vin,
       },
       premiumRequests: [
         // 1MON opcija arī
@@ -101,7 +111,8 @@ const auto = async (vehicleRegistrationNumber, regCertNr) => {
   }
 
   const data = await response.json();
-  return data;
+  console.log(data);
+  return formatResponse(data);
 };
 
-module.exports = { getToken, auto };
+module.exports = auto;

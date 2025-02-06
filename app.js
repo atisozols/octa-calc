@@ -1,4 +1,3 @@
-// izmantotās pakotnes
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -6,11 +5,10 @@ const bodyParserXml = require('body-parser-xml');
 const cors = require('cors');
 const multer = require('multer');
 
-// izmantotās datnes projekta kontekstā
 const corsOptions = require('./config/corsOptions');
 const logger = require('./middleware/logger');
 const outputFormatter = require('./middleware/outputFormatter');
-const balcia = require('./routes/api/balcia');
+const auto = require('./routes/api/auto');
 
 const app = express();
 
@@ -25,6 +23,7 @@ app.use(
     xmlParseOptions: { explicitArray: false, explicitRoot: false },
   }),
 );
+
 app.use(express.json());
 app.use(multer().none());
 app.use(cors(corsOptions));
@@ -32,6 +31,6 @@ app.use(outputFormatter);
 app.use(logger);
 
 // API route
-app.use('/api/balcia', balcia);
+app.use('/api/auto', auto);
 
 module.exports = app;
