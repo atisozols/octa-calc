@@ -1,118 +1,271 @@
+const axios = require('axios');
+require('dotenv').config();
+
+/**
+ * Retrieves an authentication token from Balcia.
+ * @returns {Promise<string>} - Authentication token.
+ */
 const getToken = async () => {
-  const authReqOptions = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  try {
+    const response = await axios.post(`${process.env.BALCIA_URL}/auth`, {
       username: process.env.BALCIA_USER,
       password: process.env.BALCIA_PASSWORD,
-    }),
-  };
+    });
 
-  const response = await fetch(
-    `${process.env.BALCIA_URL}/auth`,
-    authReqOptions,
-  );
+    if (!response.data.token) {
+      throw new Error('Balcia Error: Token not received');
+    }
 
-  if (!response.ok) {
+    return response.data.token;
+  } catch (error) {
     throw new Error(
-      `Balcia:getToken - Network response was not ok ${response.statusText}`,
+      `Balcia Error: getToken - ${error.response?.statusText || error.message}`,
     );
   }
-  const responseData = await response.json();
-
-  return responseData.token ? responseData.token : null;
 };
 
-// agrLanguage: 'LV', //izdrukas izmantotā valoda
-// paymentCountIc: 'M1', //M1 M2 M3... Jāskatās kādas lomas piešķirtas, nevar būt
-//                        lielāks par periodu noteikti, Pārsvarā lieto M1
-// periodIc: '1MON', //Polises periods - 1MON 2MON .... 11MON, 1YEAR,
-//                     Jāskatās pēc lomām, kuri ir pieejami
-// isLVRpack: true, //papildrisku paka, nav obligāti jāiekļauj
-// vehicle: jālieto vai nu mašīnas reģistrācijas apliecības numurs vai personas kods
-
-// need to make a decision about how to format the response
+/**
+ * Formats Balcia's pricing response into a structured object.
+ * @param {object} data - Raw response from Balcia.
+ * @returns {object} - Formatted pricing response.
+ */
 const formatResponse = (data) => {
+  if (!data.premiumDataList || !Array.isArray(data.premiumDataList)) {
+    throw new Error('Balcia Error: No valid pricing data available.');
+  }
+
   const prices = data.premiumDataList.reduce((acc, price) => {
-    acc[parseInt(price.periodDuration)] = parseFloat(price.premiumCalculated);
+    const term = parseInt(price.periodDuration);
+    const premium = parseFloat(price.premiumCalculated);
+
+    if (!isNaN(term) && !isNaN(premium)) {
+      acc[term] = premium;
+    }
+
     return acc;
   }, {});
 
   return { id: 'balcia', logo: '/balcia.png', prices };
 };
 
-const auto = async (reg, vin) => {
+/**
+ * Retrieves insurance pricing from Balcia.
+ * @param {string} vehicleRegistrationNumber - Car registration number.
+ * @param {string} regCertNr - Registration document number.
+ * @returns {Promise<object>} - Insurance price data.
+ */
+const getPricing = async (vehicleRegistrationNumber, regCertNr) => {
   const token = await getToken();
-  console.log('token aquired');
   if (!token) {
-    throw new Error('Balcia:auto - token not aquired');
+    throw new Error('Balcia Error: Token not acquired');
   }
 
-  const autoReqOptions = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      approve: false,
-      save: false,
-      agreementDetails: {
-        branch: 'LV',
-        agrType: 'TL05',
-        agrLanguage: 'LV',
-        paymentCountIc: 'M1',
-        periodIc: '1MON',
-        isLVRpack: true,
-        policyType: 'DEFAULT',
-      },
-      vehicle: {
-        vehicleRegistrationNumber: reg,
-        regCertNr: vin,
-      },
-      premiumRequests: [
-        // 1MON opcija arī
-        {
-          requestType: 'TlPremiumRequest',
+  try {
+    const response = await axios.post(
+      `${process.env.BALCIA_URL}/auto`,
+      {
+        approve: false,
+        save: false,
+        agreementDetails: {
+          branch: 'LV',
+          agrType: 'TL05',
+          agrLanguage: 'LV',
+          paymentCountIc: 'M1',
           periodIc: '1MON',
+          isLVRpack: true,
+          policyType: 'DEFAULT',
         },
-        {
-          requestType: 'TlPremiumRequest',
-          periodIc: '3MON',
+        vehicle: {
+          vehicleRegistrationNumber,
+          regCertNr,
         },
-        {
-          requestType: 'TlPremiumRequest',
-          periodIc: '6MON',
+        premiumRequests: [
+          { requestType: 'TlPremiumRequest', periodIc: '1MON' },
+          { requestType: 'TlPremiumRequest', periodIc: '3MON' },
+          { requestType: 'TlPremiumRequest', periodIc: '6MON' },
+          { requestType: 'TlPremiumRequest', periodIc: '9MON' },
+          { requestType: 'TlPremiumRequest', periodIc: '1YEAR' },
+        ],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        {
-          requestType: 'TlPremiumRequest',
-          periodIc: '9MON',
-        },
-        {
-          requestType: 'TlPremiumRequest',
-          periodIc: '1YEAR',
-        },
-      ],
-    }),
-  };
+      },
+    );
 
-  const response = await fetch(
-    `${process.env.BALCIA_URL}/auto`,
-    autoReqOptions,
-  );
+    if (response.data.errorList && response.data.errorList.length > 0) {
+      throw new Error(`Balcia Error: ${response.data.errorList[0].message}`);
+    }
 
-  if (!response.ok) {
-    console.log(response);
+    return formatResponse(response.data);
+  } catch (error) {
     throw new Error(
-      `Balcia:auto - Network response was not ok ${response.statusText}`,
+      `Balcia Error: getPricing - ${
+        error.response?.statusText || error.message
+      }`,
     );
   }
-
-  const data = await response.json();
-  console.log(data);
-  return formatResponse(data);
 };
 
-module.exports = auto;
+/**
+ * Saves an insurance policy in Balcia’s system and returns the policy data.
+ * @param {string} vehicleRegistrationNumber - Car registration number.
+ * @param {string} regCertNr - Registration document number.
+ * @param {number} policyPeriod - Insurance duration in months.
+ * @returns {Promise<object>} - Policy data including `policyId`.
+ */
+const savePolicy = async (
+  vehicleRegistrationNumber,
+  regCertNr,
+  policyPeriod,
+) => {
+  const token = await getToken();
+
+  try {
+    const response = await axios.post(
+      `${process.env.BALCIA_URL}/auto`,
+      {
+        approve: false,
+        save: true,
+        agreementDetails: {
+          branch: 'LV',
+          agrType: 'TL05',
+          agrLanguage: 'LV',
+          paymentCountIc: 'M1',
+          periodIc: `${policyPeriod}MON`,
+          isLVRpack: true,
+          policyType: 'DEFAULT',
+        },
+        vehicle: {
+          vehicleRegistrationNumber,
+          regCertNr,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (response.data.errorList && response.data.errorList.length > 0) {
+      throw new Error(`Balcia Error: ${response.data.errorList[0].message}`);
+    }
+
+    return response.data; // Return policy data, including policyId
+  } catch (error) {
+    throw new Error(
+      `Balcia Error: savePolicy - ${
+        error.response?.statusText || error.message
+      }`,
+    );
+  }
+};
+
+/**
+ * Approves an insurance policy in Balcia’s system.
+ * @param {string} vehicleRegistrationNumber - Car registration number.
+ * @param {string} regCertNr - Registration document number.
+ * @param {number} policyPeriod - Insurance duration in months.
+ * @param {string} agreementId - Agreement ID.
+ * @param {string} customerEmail - Customer email address.
+ * @param {string} customerPhone - Customer phone number.
+ * @returns {Promise<object>} - Policy data including `policyId`.
+ */
+const concludePolicy = async (
+  vehicleRegistrationNumber,
+  regCertNr,
+  policyPeriod,
+  agreementId,
+  customerEmail,
+  customerPhone,
+) => {
+  const token = await getToken();
+
+  try {
+    const saveResponse = await axios.post(
+      `${process.env.BALCIA_URL}/auto`,
+      {
+        approve: false,
+        save: true,
+        agreementDetails: {
+          branch: 'LV',
+          agrType: 'TL05',
+          agrLanguage: 'LV',
+          paymentCountIc: 'M1',
+          periodIc: `${policyPeriod}MON`,
+          isLVRpack: true,
+          policyType: 'DEFAULT',
+          agreementId,
+        },
+        vehicle: {
+          vehicleRegistrationNumber,
+          regCertNr,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (saveResponse.data.errorList && saveResponse.data.errorList.length > 0) {
+      throw new Error(
+        `Balcia Error: ${saveResponse.data.errorList[0].message}`,
+      );
+    }
+
+    const agreementDetails = saveResponse.data.agreementDetails;
+
+    const response = await axios.post(
+      `${process.env.BALCIA_URL}/auto`,
+      {
+        approve: true,
+        save: true,
+        agreementDetails: {
+          branch: 'LV',
+          agrType: 'TL05',
+          agrLanguage: 'LV',
+          paymentCountIc: 'M1',
+          periodIc: `${policyPeriod}MON`,
+          isLVRpack: true,
+          policyType: 'DEFAULT',
+          agreementId,
+          holder: {
+            registrationCode: agreementDetails.holder_code,
+            name: agreementDetails.holder_name,
+            firstName: agreementDetails.holder_first_name,
+            email: customerEmail,
+            phone: customerPhone,
+            updateWithProposal: false,
+          },
+        },
+        vehicle: {
+          vehicleRegistrationNumber,
+          regCertNr,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    return response.data; // Return policy data, including policyId
+  } catch (error) {
+    throw new Error(
+      `Balcia Error: savePolicy - ${
+        error.response?.statusText || error.message
+      }`,
+    );
+  }
+};
+
+module.exports = { getPricing, savePolicy, concludePolicy };

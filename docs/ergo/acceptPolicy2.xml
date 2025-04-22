@@ -1,0 +1,12 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.dis.ergo.com/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <web:acceptPolicy2>
+		 <sessionKey>7a29b701-a18a-4655-97b3-271c4be62750</sessionKey>
+		<policyTypeCode>820</policyTypeCode>
+         <policyOfferNumber>322548</policyOfferNumber>
+         <policyOfferSerie>SGQ</policyOfferSerie>
+         <policyOfferBeginDate>2024-09-20T00:00:00</policyOfferBeginDate>
+      </web:acceptPolicy2>
+   </soapenv:Body>
+</soapenv:Envelope>

@@ -7,30 +7,26 @@ const multer = require('multer');
 
 const corsOptions = require('./config/corsOptions');
 const logger = require('./middleware/logger');
-const outputFormatter = require('./middleware/outputFormatter');
 const auto = require('./routes/api/auto');
+const payment = require('./routes/api/payment');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// middleware
-// konfigurē bodyParser ar Xml atbalstu
 bodyParserXml(bodyParser);
-
-// papildus options objektā norādītas izmaiņas, lai parser
-// neveidotu array struktūru un neglabātu root elementu
 app.use(
   bodyParser.xml({
     xmlParseOptions: { explicitArray: false, explicitRoot: false },
   }),
 );
-
 app.use(express.json());
 app.use(multer().none());
 app.use(cors(corsOptions));
-app.use(outputFormatter);
 app.use(logger);
 
-// API route
 app.use('/api/auto', auto);
+app.use('/api/payment', payment);
+
+app.use(errorHandler);
 
 module.exports = app;

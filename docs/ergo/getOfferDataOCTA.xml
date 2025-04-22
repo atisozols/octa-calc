@@ -1,0 +1,10 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.dis.ergo.com/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <web:getOfferDataOCTA>
+         <sessionKey>7a29b701-a18a-4655-97b3-271c4be62750</sessionKey>
+          <vehicleRegNr>MF2540</vehicleRegNr>
+         <vehicleCertNr>AF4033418</vehicleCertNr>
+      </web:getOfferDataOCTA>
+   </soapenv:Body>
+</soapenv:Envelope>

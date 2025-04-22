@@ -1,0 +1,29 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://webservices.dis.ergo.com/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <web:saveOfferOCTA>
+      <sessionKey>7a29b701-a18a-4655-97b3-271c4be62750</sessionKey>
+      <vehicleRegNr>MF2540</vehicleRegNr>
+      <vehicleCertNr>AF4033418</vehicleCertNr>
+      <policyIssueDate>2024-08-21T09:04:51</policyIssueDate>
+      <policyBeginDate>2024-09-20T00:00:00</policyBeginDate>
+      <policyEndDate>2025-09-20T00:00:00</policyEndDate>
+      <authorizedChannelCode>WA02204070</authorizedChannelCode>
+      <policyPremium>100.59</policyPremium>
+      <policyReceiverPhone>28313730</policyReceiverPhone>
+      <policyReceiverEqualsHolderOwner>true</policyReceiverEqualsHolderOwner>
+      <policyRemindersSubscriptionMethod>
+        <web:email>0</web:email>
+        <web:post>0</web:post>
+        <web:sms>0</web:sms>
+      </policyRemindersSubscriptionMethod>
+      <isEdocCreationEnabled>false</isEdocCreationEnabled>
+      <isEdocCreationAsyncMode>false</isEdocCreationAsyncMode>
+      <octaPlus>false</octaPlus>
+      <octaPlusAssistance>false</octaPlusAssistance>
+      <canBeMoreThenOneValidPolicy>true</canBeMoreThenOneValidPolicy>
+      <vehicleOwnerPhone>28313730</vehicleOwnerPhone>
+      <vehicleHolderPhone>28313730</vehicleHolderPhone>
+      </web:saveOfferOCTA>
+   </soapenv:Body>
+</soapenv:Envelope>
