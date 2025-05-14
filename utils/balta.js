@@ -13,7 +13,7 @@ const agent = new https.Agent({
   minVersion: 'TLSv1.2',
 });
 
-const BALTA_API_URL = 'https://www.baltaonline.lv:8443/Veseris/Policy/18.asmx';
+const BALTA_API_URL = process.env.BALTA_API_URL;
 
 /**
  * Retrieves pricing information for a vehicle based on its registration number and document number.
