@@ -11,7 +11,9 @@ const balciaPricing = async (req, res, next) => {
 
     next();
   } catch (error) {
-    next(error);
+    // Prefix error with company name for errorHandler.js to recognize
+    const balciaError = new Error(`Balcia: ${error.message}`);
+    next(balciaError);
   }
 };
 

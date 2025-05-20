@@ -1,6 +1,6 @@
 const axios = require('axios');
-const Order = require('../models/Order');
-const { createPolicyOffer, approvePolicy } = require('../utils/policyService');
+const { Order, ORDER_STATUS } = require('../models/Order');
+const { savePolicyOffer, approvePolicy } = require('../utils/policyService');
 
 const createPayment = async (req, res, next) => {
   try {
@@ -8,7 +8,7 @@ const createPayment = async (req, res, next) => {
 
     console.log('received data', req.body);
 
-    const policyData = await createPolicyOffer(
+    const policyData = await savePolicyOffer(
       selectedOfferId,
       carData,
       octaDuration,
@@ -22,7 +22,8 @@ const createPayment = async (req, res, next) => {
       throw new Error('Failed to save policy offer');
     }
 
-    const order = new Order({
+    // Create initial order using the static method
+    const savedOrder = await Order.createInitialOrder({
       policyId: policyData.policyId,
       insuranceCompany: selectedOfferId,
       offerPrice: policyData.price,
@@ -32,9 +33,7 @@ const createPayment = async (req, res, next) => {
       octaDuration,
     });
 
-    console.log('order', order);
-
-    const savedOrder = await order.save();
+    console.log('order created', savedOrder);
 
     const requestBody = {
       account_name: process.env.SEB_ACCOUNT_NAME,
@@ -60,9 +59,9 @@ const createPayment = async (req, res, next) => {
       },
     );
 
-    await Order.findByIdAndUpdate(savedOrder._id, {
-      paymentReference: response.data.payment_reference,
-    });
+    // Update order with payment reference and change status to checkout initiated
+    const order = await Order.findById(savedOrder._id);
+    await order.initiateCheckout(response.data.payment_reference);
 
     res.json({
       paymentLink: response.data.payment_link,
@@ -118,19 +117,25 @@ const processCallback = async (req, res) => {
       if (paymentStatus === 'settled') {
         console.log(`✅ Payment Successful for Order: ${order_reference}`);
 
-        // Update Order Payment Status
-        await Order.findByIdAndUpdate(order._id, {
-          paymentStatus: 'successful',
-        });
+        // Mark order as paid using utility method
+        await order.markAsPaid();
 
-        // Approve Policy
-        await approvePolicy(order);
+        // Approve Policy and get policy ID
+        const policyResult = await approvePolicy(order);
+
+        // If policy approval returned a policy ID, update the order
+        if (policyResult && policyResult.policyId) {
+          await order.approvePolicyWithId(policyResult.policyId);
+        }
 
         return res.status(200).send('Payment Approved');
       } else if (paymentStatus === 'failed' || paymentStatus === 'abandoned') {
         console.log(`❌ Payment Failed for Order: ${order_reference}`);
 
-        await Order.findByIdAndUpdate(order._id, { paymentStatus: 'failed' });
+        // Mark order as failed with reason
+        await order.markAsFailed(
+          `Payment ${paymentStatus}: ${payment_reference}`,
+        );
 
         return res.status(400).send('Payment Failed');
       } else {

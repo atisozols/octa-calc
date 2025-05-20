@@ -11,7 +11,9 @@ const baltaPricing = async (req, res, next) => {
 
     next();
   } catch (error) {
-    next(error);
+    // Prefix error with company name for errorHandler.js to recognize
+    const baltaError = new Error(`Balta: ${error.message}`);
+    next(baltaError);
   }
 };
 

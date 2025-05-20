@@ -64,13 +64,13 @@ const getPricing = async (vehicleRegNr, vehicleRegCertNr) => {
 
       const errorMessage = messageArray.find((msg) => msg.Type === '1');
       if (errorMessage) {
-        throw new Error(`Balta Error: ${errorMessage.Text}`);
+        throw new Error(`${errorMessage.Text}`);
       }
     }
 
     return formatResponse(jsonData);
   } catch (error) {
-    throw new Error(`Balta Error: ${error.message}`);
+    throw new Error(`${error.message}`);
   }
 };
 
@@ -142,7 +142,7 @@ const savePolicy = async (vehicleRegNr, vehicleRegCertNr, policyPeriod) => {
 
       const errorMessage = messageArray.find((msg) => msg.Type === '1');
       if (errorMessage) {
-        throw new Error(`Balta Error: ${errorMessage.Text}`);
+        throw new Error(`${errorMessage.Text}`);
       }
     }
 
@@ -151,13 +151,18 @@ const savePolicy = async (vehicleRegNr, vehicleRegCertNr, policyPeriod) => {
         'PolicyID'
       ];
 
+    const price =
+      jsonData['soap:Envelope']['soap:Body']['SaveResponse']['SaveResult'][
+        'PolicyPremium'
+      ];
+
     if (!policyId) {
       throw new Error('Failed to retrieve policy ID from Balta.');
     }
 
-    return policyId;
+    return { policyId, price };
   } catch (error) {
-    throw new Error(`Balta Save Policy Error: ${error.message}`);
+    throw new Error(`savePolicy - ${error.message}`);
   }
 };
 
@@ -193,7 +198,7 @@ const concludePolicy = async (policyId) => {
 
     return jsonData; // Returning the full response as we don’t know the exact structure
   } catch (error) {
-    throw new Error(`Balta Conclude Policy Error: ${error.message}`);
+    throw new Error(`concludePolicy - ${error.message}`);
   }
 };
 

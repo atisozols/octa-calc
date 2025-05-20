@@ -9,7 +9,9 @@ const ergoPricing = async (req, res, next) => {
     res.data.push(pricingData);
     next();
   } catch (error) {
-    next(error);
+    // Prefix error with company name for errorHandler.js to recognize
+    const ergoError = new Error(`ERGO: ${error.message}`);
+    next(ergoError);
   }
 };
 

@@ -2,9 +2,9 @@ const errorHandler = (err, req, res, next) => {
   console.error(`[Error] ${err.message}`);
 
   if (
-    err.message.startsWith('ERGO Error:') ||
-    err.message.startsWith('Balcia Error:') ||
-    err.message.startsWith('Balta Error:')
+    err.message.startsWith('ERGO:') ||
+    err.message.startsWith('Balcia:') ||
+    err.message.startsWith('Balta:')
   ) {
     return res.status(400).json({ message: err.message });
   }

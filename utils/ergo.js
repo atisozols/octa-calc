@@ -63,13 +63,13 @@ const getToken = async () => {
     );
 
     const match = response.data.match(/<return>(.*?)<\/return>/);
-    if (!match) throw new Error('ERGO Error: No session key in response');
+    if (!match) throw new Error('No session key in response');
 
     console.log('Ergo token aqcuired: ', match[1]);
     return match[1];
   } catch (error) {
     throw new Error(
-      `ERGO Error: getToken - ${error.response?.statusText || error.message}`,
+      `getToken - ${error.response?.statusText || error.message}`,
     );
   }
 };
@@ -81,7 +81,7 @@ const getToken = async () => {
  */
 const formatResponse = (data) => {
   if (!data.premiums || !Array.isArray(data.premiums)) {
-    throw new Error('ERGO Error: No valid pricing data available.');
+    throw new Error('No valid pricing data available.');
   }
 
   const prices = data.premiums.reduce((acc, premium) => {
@@ -107,7 +107,7 @@ const formatResponse = (data) => {
 const getPricing = async (vehicleRegNr, vehicleCertNr) => {
   const sessionKey = await getToken();
   if (!sessionKey) {
-    throw new Error('ERGO Error: Session key not acquired');
+    throw new Error('Session key not acquired');
   }
 
   try {
@@ -129,13 +129,13 @@ const getPricing = async (vehicleRegNr, vehicleCertNr) => {
     const parsedJson = parseXmlToJson(response.data);
 
     if (parsedJson.status !== '0') {
-      throw new Error(`ERGO Error: ${parsedJson.statusText}`);
+      throw new Error(`${parsedJson.statusText}`);
     }
     console.log('Ergo pricing aqcuired: ');
     return formatResponse(parsedJson);
   } catch (error) {
     throw new Error(
-      `ERGO Error: getPricing - ${error.response?.statusText || error.message}`,
+      `getPricing - ${error.response?.statusText || error.message}`,
     );
   }
 };
@@ -170,7 +170,7 @@ const savePolicy = async (vehicleRegNr, vehicleCertNr, policyPeriod) => {
     const offerData = parseXmlToJson(getOfferResponse.data);
 
     if (offerData.status !== '0') {
-      throw new Error(`ERGO Get Offer Error: ${offerData.statusText}`);
+      throw new Error(`${offerData.statusText}`);
     }
 
     const premiumsDict = {
@@ -191,9 +191,7 @@ const savePolicy = async (vehicleRegNr, vehicleCertNr, policyPeriod) => {
     console.log(policyPremium, personCode, personName, personSurname);
 
     if (!policyPremium || !personCode || !personName || !personSurname) {
-      throw new Error(
-        'ERGO Error: Missing required fields in getOffer response.',
-      );
+      throw new Error('Missing required fields in getOffer response.');
     }
 
     // Step 2: Save the Policy Offer using extracted offer data
@@ -234,13 +232,16 @@ const savePolicy = async (vehicleRegNr, vehicleCertNr, policyPeriod) => {
     console.log(saveOfferData);
 
     if (saveOfferData.status !== '0') {
-      throw new Error(`ERGO Save Policy Error: ${saveOfferData.statusText}`);
+      throw new Error(`${saveOfferData.statusText}`);
     }
 
-    return saveOfferData.policyOfferId; // Return the policy offer ID for later acceptance.
+    return {
+      policyId: saveOfferData.policyOfferId,
+      price: saveOfferData.policyPremium,
+    }; // Return the policy offer ID for later acceptance.
   } catch (error) {
     throw new Error(
-      `ERGO Save Policy Error: ${error.response?.statusText || error.message}`,
+      `savePolicy - ${error.response?.statusText || error.message}`,
     );
   }
 };
@@ -274,15 +275,13 @@ const concludePolicy = async (policyOfferNumber, policyOfferBeginDate) => {
     const parsedJson = parseXmlToJson(response.data);
 
     if (parsedJson.status !== '0') {
-      throw new Error(`ERGO Conclude Policy Error: ${parsedJson.statusText}`);
+      throw new Error(`Conclude Policy Error: ${parsedJson.statusText}`);
     }
 
     return parsedJson; // Return full response as we may need policy number or other details.
   } catch (error) {
     throw new Error(
-      `ERGO Conclude Policy Error: ${
-        error.response?.statusText || error.message
-      }`,
+      `Conclude Policy Error: ${error.response?.statusText || error.message}`,
     );
   }
 };

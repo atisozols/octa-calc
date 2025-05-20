@@ -13,14 +13,12 @@ const getToken = async () => {
     });
 
     if (!response.data.token) {
-      throw new Error('Balcia Error: Token not received');
+      throw new Error('Token not received');
     }
 
     return response.data.token;
   } catch (error) {
-    throw new Error(
-      `Balcia Error: getToken - ${error.response?.statusText || error.message}`,
-    );
+    throw new Error(`${error.response?.statusText || error.message}`);
   }
 };
 
@@ -31,7 +29,7 @@ const getToken = async () => {
  */
 const formatResponse = (data) => {
   if (!data.premiumDataList || !Array.isArray(data.premiumDataList)) {
-    throw new Error('Balcia Error: No valid pricing data available.');
+    throw new Error('No valid pricing data available.');
   }
 
   const prices = data.premiumDataList.reduce((acc, price) => {
@@ -57,7 +55,7 @@ const formatResponse = (data) => {
 const getPricing = async (vehicleRegistrationNumber, regCertNr) => {
   const token = await getToken();
   if (!token) {
-    throw new Error('Balcia Error: Token not acquired');
+    throw new Error('Token not acquired while getting pricing');
   }
 
   try {
@@ -96,16 +94,12 @@ const getPricing = async (vehicleRegistrationNumber, regCertNr) => {
     );
 
     if (response.data.errorList && response.data.errorList.length > 0) {
-      throw new Error(`Balcia Error: ${response.data.errorList[0].message}`);
+      throw new Error(`${response.data.errorList[0].message}`);
     }
 
     return formatResponse(response.data);
   } catch (error) {
-    throw new Error(
-      `Balcia Error: getPricing - ${
-        error.response?.statusText || error.message
-      }`,
-    );
+    throw new Error(`${error.response?.statusText || error.message}`);
   }
 };
 
@@ -152,15 +146,16 @@ const savePolicy = async (
     );
 
     if (response.data.errorList && response.data.errorList.length > 0) {
-      throw new Error(`Balcia Error: ${response.data.errorList[0].message}`);
+      throw new Error(`${response.data.errorList[0].message}`);
     }
 
-    return response.data; // Return policy data, including policyId
+    return {
+      policyId: response.data.agreementDetails.agreementId,
+      price: response.data.agreementDetails.premium,
+    };
   } catch (error) {
     throw new Error(
-      `Balcia Error: savePolicy - ${
-        error.response?.statusText || error.message
-      }`,
+      `savePolicy - ${error.response?.statusText || error.message}`,
     );
   }
 };
@@ -215,9 +210,7 @@ const concludePolicy = async (
     );
 
     if (saveResponse.data.errorList && saveResponse.data.errorList.length > 0) {
-      throw new Error(
-        `Balcia Error: ${saveResponse.data.errorList[0].message}`,
-      );
+      throw new Error(`${saveResponse.data.errorList[0].message}`);
     }
 
     const agreementDetails = saveResponse.data.agreementDetails;
@@ -261,9 +254,7 @@ const concludePolicy = async (
     return response.data; // Return policy data, including policyId
   } catch (error) {
     throw new Error(
-      `Balcia Error: savePolicy - ${
-        error.response?.statusText || error.message
-      }`,
+      `concludePolicy - ${error.response?.statusText || error.message}`,
     );
   }
 };
