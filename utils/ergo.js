@@ -249,11 +249,14 @@ const savePolicy = async (vehicleRegNr, vehicleCertNr, policyPeriod) => {
 /**
  * Concludes an insurance policy in Ergo’s system.
  * @param {string} policyOfferNumber - Policy offer number from `savePolicy`.
- * @param {string} policyOfferBeginDate - Policy start date in YYYY-MM-DD format.
  * @returns {Promise<object>} - Full response object from Ergo.
  */
-const concludePolicy = async (policyOfferNumber, policyOfferBeginDate) => {
+const concludePolicy = async (policyOfferNumber) => {
   const sessionKey = await getToken();
+
+  const policyBeginDate = new Date();
+  policyBeginDate.setDate(policyBeginDate.getDate() + 1);
+  const formattedBeginDate = policyBeginDate.toISOString().split('T')[0];
 
   const soapRequest = `<?xml version="1.0" encoding="utf-8"?>
   <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -262,7 +265,7 @@ const concludePolicy = async (policyOfferNumber, policyOfferBeginDate) => {
         <sessionKey xmlns="">${sessionKey}</sessionKey>
         <policyTypeCode xmlns="">OCTA</policyTypeCode>
         <policyOfferNumber xmlns="">${policyOfferNumber}</policyOfferNumber>
-        <policyOfferBeginDate xmlns="">${policyOfferBeginDate}</policyOfferBeginDate>
+        <policyOfferBeginDate xmlns="">${formattedBeginDate}</policyOfferBeginDate>
       </acceptPolicy2>
     </soap:Body>
   </soap:Envelope>`;

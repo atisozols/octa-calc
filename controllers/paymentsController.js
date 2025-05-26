@@ -12,8 +12,6 @@ const createPayment = async (req, res, next) => {
       selectedOfferId,
       carData,
       octaDuration,
-      email,
-      phone,
     );
 
     console.log('policyData', policyData);
